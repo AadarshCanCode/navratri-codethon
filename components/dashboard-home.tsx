@@ -41,6 +41,7 @@ interface DiseaseData {
   name: string
   value: number
   color: string
+  [key: string]: any
 }
 
 interface RecentActivity {
@@ -285,7 +286,7 @@ export function DashboardHome() {
     return (
       <div className="p-8 space-y-8">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Healthcare Dashboard</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2">VAP's Health Mentor</h1>
           <p className="text-muted-foreground">Loading your health overview...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -304,7 +305,7 @@ export function DashboardHome() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Healthcare Dashboard</h1>
+        <h1 className="text-4xl font-bold text-foreground mb-2">VAP's Health Mentor</h1>
         <p className="text-muted-foreground">Welcome back! Here's your health overview.</p>
       </div>
 

@@ -6,9 +6,9 @@ import './globals.css'
 import AnimatedLayout from '@/components/animated-layout'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'VAP AI - Your AI Healthcare Companion',
+  description: "VAP AI — AI-powered healthcare assistant tools",
+  generator: 'vap-ai',
 }
 
 export default function RootLayout({

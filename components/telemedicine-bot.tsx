@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,9 @@ import { useRouter } from "next/navigation"
 export function TelemedicineBot() {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const router = useRouter()
 
   const startWhatsAppAndRedirect = (doctorName?: string, phoneNumber = "919579925834") => {
@@ -48,8 +51,8 @@ export function TelemedicineBot() {
     router.push("/telemedicine")
   }
 
-  const handleSend = () => {
-    if (!input.trim()) return
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return
 
     const userMessage: Message = {
       id: messages.length + 1,
@@ -58,32 +61,85 @@ export function TelemedicineBot() {
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     }
 
-    setMessages([...messages, userMessage])
+    setMessages((prev) => [...prev, userMessage])
     setInput("")
+    setError(null)
 
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = `sess_${Math.random().toString(36).slice(2, 9)}`
+    }
+
+    // Add placeholder assistant message to be replaced while streaming
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
         sender: "bot",
-        text: getBotResponse(input),
+        text: "…",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ])
+
+    setIsLoading(true)
+
+    try {
+      const res = await fetch("/api/telemedicine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage.text, sessionId: sessionIdRef.current, patientContext: null }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || "Telemedicine service error")
       }
-      setMessages((prev) => [...prev, botResponse])
-    }, 1000)
+
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      let done = false
+      let accumulated = ""
+
+      while (!done && reader) {
+        const { value, done: readerDone } = await reader.read()
+        done = !!readerDone
+        if (value) {
+          const chunk = decoder.decode(value)
+          accumulated += chunk
+          // update last assistant message
+          setMessages((prev) => {
+            const copy = [...prev]
+            for (let i = copy.length - 1; i >= 0; i--) {
+              if (copy[i].sender === "bot") {
+                copy[i] = { ...copy[i], text: accumulated }
+                break
+              }
+            }
+            return copy
+          })
+        }
+      }
+    } catch (err: any) {
+      console.error("Chat error:", err)
+      setError(err?.message || "Failed to reach telemedicine service")
+      // replace last assistant with friendly error
+      setMessages((prev) => {
+        const copy = [...prev]
+        for (let i = copy.length - 1; i >= 0; i--) {
+          if (copy[i].sender === "bot") {
+            copy[i] = { ...copy[i], text: "Sorry, I'm unable to reach the telemedicine assistant right now. Please try again later or connect with a doctor." }
+            break
+          }
+        }
+        return copy
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
+  // Local fallback response when server is unreachable
   const getBotResponse = (userInput: string): string => {
-    const lower = userInput.toLowerCase()
-    if (lower.includes("fever") || lower.includes("temperature")) {
-      return "I understand you have a fever. For temperatures above 100.4°F (38°C), I recommend rest, hydration, and over-the-counter fever reducers. If it persists for more than 3 days or exceeds 103°F, please consult a doctor. Would you like me to connect you with a physician?"
-    }
-    if (lower.includes("headache") || lower.includes("pain")) {
-      return "Headaches can have various causes. Try resting in a quiet, dark room and staying hydrated. Over-the-counter pain relievers may help. If severe or persistent, I can schedule you with a neurologist. Would you like to book an appointment?"
-    }
-    if (lower.includes("appointment") || lower.includes("doctor")) {
-      return "I can help you schedule an appointment with a healthcare provider. Based on your symptoms, I recommend seeing a general practitioner. Available slots are tomorrow at 2 PM or Friday at 10 AM. Which works better for you?"
-    }
-    return "Thank you for sharing that information. Based on your symptoms, I recommend consulting with a healthcare professional for a proper evaluation. Would you like me to connect you with a doctor via video call or schedule an in-person appointment?"
+    return "Thank you for sharing that information. I'm here to help — if you'd like, I can connect you with a doctor for a video visit or provide general self-care guidance."
   }
 
   return (

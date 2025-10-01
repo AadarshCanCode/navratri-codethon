@@ -43,7 +43,7 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
             <Activity className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">HealthAI</h1>
+            <h1 className="text-xl font-bold text-foreground">VAP AI</h1>
             <p className="text-xs text-muted-foreground">Medical Dashboard</p>
           </div>
         </div>

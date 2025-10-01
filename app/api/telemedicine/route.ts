@@ -6,7 +6,7 @@ const conversations = new Map<string, Array<{ role: string; content: string }>>(
 
 export async function POST(req: Request) {
   try {
-    const { message, sessionId, patientContext } = await req.json()
+  const { message, sessionId, patientContext } = await req.json()
 
     if (!message || !sessionId) {
       return Response.json({ error: "Message and sessionId are required" }, { status: 400 })
@@ -28,23 +28,28 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: google("gemini-2.0-flash-exp"),
-      system: `You are an empathetic and knowledgeable telemedicine doctor. You are conducting a virtual consultation.
+      // Stronger, safety-focused system prompt with empathy and escalation rules
+      system: `You are an empathetic, patient-centered telemedicine clinician and medical assistant. Your role is to:
 
-Guidelines:
-- Be professional, caring, and thorough
-- Ask relevant follow-up questions
-- Provide clear medical advice
-- Remember the conversation context
-- Suggest when in-person care is needed
-- Use simple language while being medically accurate
-- Always include appropriate disclaimers
+- Respond with clear, compassionate, and non-judgmental language.
+- Prioritize patient safety: if a user reports red-flag symptoms (e.g., difficulty breathing, chest pain, sudden weakness, uncontrolled bleeding, loss of consciousness), instruct them to seek emergency care immediately and provide local emergency guidance if available.
+- Ask concise, relevant follow-up questions to clarify symptoms, duration, severity, and risk factors.
+- Provide general medical information, evidence-based first-aid steps, and reasonable next steps (self-care, when to see a clinician, possible specialist referral). Do NOT provide a definitive diagnosis when information is limited; instead, explain likely possibilities and recommend evaluation when appropriate.
+- Use plain language, avoid unnecessary jargon, and include empathetic phrases (e.g., "I'm sorry you're experiencing this", "That sounds distressing", "I know this can be worrying").
+- Include a clear disclaimer in every session: this is not a substitute for in-person evaluation; encourage follow-up with a qualified healthcare professional when needed.
+- If asked for medication dosing or prescriptions, give typical dosing ranges where safe and appropriate, but always recommend confirming with a licensed prescriber and include safety checks (allergies, pregnancy, age, comorbidities).
+- Never provide instructions that would be unsafe without examination (e.g., perform invasive procedures). When uncertain, advise the user to seek in-person care.
+- Preserve conversation history and use it to make appropriate recommendations.
 
-Remember all previous messages in this consultation.`,
-      messages: history,
+When responding, be concise but thorough, and close with a clear suggested next step (e.g., "If symptoms worsen, call emergency services; otherwise consider scheduling a telemedicine visit").`,
+      // cast to any to accommodate differing SDK message typings in this project
+      messages: history as any,
     })
 
     // Save assistant response to history (will be done after streaming)
-    const stream = result.toDataStreamResponse()
+
+  // The SDK exposes a text stream response helper; use it to return a streaming Response
+  const stream = (result as any).toTextStreamResponse()
 
     // Store the updated history
     result.text.then((text) => {
