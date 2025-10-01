@@ -18,6 +18,7 @@ import {
 } from "recharts"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 
 interface DashboardStats {
   totalPatients: number
@@ -308,23 +309,30 @@ export function DashboardHome() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsData.map((stat) => {
+        {statsData.map((stat, idx) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="border-border">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                    <h3 className="text-3xl font-bold text-foreground">{stat.value}</h3>
-                    <p className={cn("text-sm mt-2", stat.color)}>{stat.change}</p>
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.28 }}
+            >
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+                      <h3 className="text-3xl font-bold text-foreground">{stat.value}</h3>
+                      <p className={cn("text-sm mt-2", stat.color)}>{stat.change}</p>
+                    </div>
+                    <div className={cn("p-3 rounded-lg bg-muted", stat.color)}>
+                      <Icon className="w-6 h-6" />
+                    </div>
                   </div>
-                  <div className={cn("p-3 rounded-lg bg-muted", stat.color)}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           )
         })}
       </div>

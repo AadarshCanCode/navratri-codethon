@@ -75,9 +75,24 @@ export function MentalHealth() {
               onChange={(e) => setMoodInput(e.target.value)}
               className="min-h-32 resize-none"
             />
-            <Button onClick={handleAnalyze} disabled={!moodInput.trim() || analyzing} className="w-full">
-              {analyzing ? "Analyzing..." : "Analyze Mood"}
-            </Button>
+              <div className="flex flex-col gap-3">
+                <Button onClick={handleAnalyze} disabled={!moodInput.trim() || analyzing} className="w-full">
+                  {analyzing ? "Analyzing..." : "Analyze Mood"}
+                </Button>
+
+                {/* Emotion Detection button - opens the SmolVLM static page served from /smolvlm/auto.html */}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Open the static SmolVLM page in a new window/tab
+                    // The file is copied to public/smolvlm/auto.html and will be served at /smolvlm/auto.html
+                    window.open('/smolvlm/auto.html', '_blank', 'noopener,noreferrer');
+                  }}
+                  className="w-full"
+                >
+                  Emotion Detection
+                </Button>
+              </div>
           </CardContent>
         </Card>
 

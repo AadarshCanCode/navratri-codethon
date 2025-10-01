@@ -1,5 +1,6 @@
 "use client"
 
+import { motion } from "framer-motion"
 import {
   Activity,
   Brain,
@@ -35,7 +36,7 @@ const menuItems = [
 
 export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
   return (
-    <aside className="w-64 border-r border-border bg-card flex flex-col">
+    <aside className="w-64 border-r border-border bg-card flex flex-col shadow-sm">
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -52,9 +53,14 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
         {menuItems.map((item) => {
           const Icon = item.icon
           return (
-            <button
+            <motion.button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.18 }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
                 activeSection === item.id
@@ -64,7 +70,7 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
             >
               <Icon className="w-5 h-5" />
               <span>{item.label}</span>
-            </button>
+            </motion.button>
           )
         })}
       </nav>

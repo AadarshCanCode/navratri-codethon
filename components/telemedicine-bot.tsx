@@ -23,9 +23,30 @@ const initialMessages: Message[] = [
   },
 ]
 
+import { useRouter } from "next/navigation"
+
 export function TelemedicineBot() {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
+  const router = useRouter()
+
+  const startWhatsAppAndRedirect = (doctorName?: string, phoneNumber = "919579925834") => {
+    const message = encodeURIComponent(
+      `Hello Doctor, I would like to start a video consultation. Patient: ${doctorName || "Not specified"}`,
+    )
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`
+
+    // Open WhatsApp in new tab and navigate to telemedicine UI
+    try {
+      window.open(whatsappUrl, "_blank")
+    } catch (e) {
+      // fallback
+      window.location.href = whatsappUrl
+    }
+
+    // Navigate to the telemedicine page in the app
+    router.push("/telemedicine")
+  }
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -85,7 +106,12 @@ export function TelemedicineBot() {
                 <Bot className="w-5 h-5 text-primary" />
                 AI Health Assistant
               </span>
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 bg-transparent"
+                onClick={() => startWhatsAppAndRedirect()}
+              >
                 <Video className="w-4 h-4" />
                 Connect to Doctor
               </Button>
@@ -149,11 +175,19 @@ export function TelemedicineBot() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 bg-transparent"
+              onClick={() => startWhatsAppAndRedirect()}
+            >
               <Video className="w-4 h-4" />
               Start Video Call
             </Button>
-            <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 bg-transparent"
+              onClick={() => startWhatsAppAndRedirect()}
+            >
               <MessageSquare className="w-4 h-4" />
               Chat with Doctor
             </Button>
