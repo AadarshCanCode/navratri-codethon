@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Video-Voice Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--background);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            background-color: var(--surface);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--primary-color), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            background-color: var(--background);
+            border: 2px solid var(--border);
+        }
+
+        #videoFeed {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background-color: var(--surface);
+            border-radius: 16px;
+            display: block;
+        }
+
+        #processingOverlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text);
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            backdrop-filter: blur(4px);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            background-color: var(--background);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 0.5rem;
+            background-color: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .control-group label {
+            min-width: 150px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"], textarea, select {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: var(--background);
+            color: var(--text);
+            transition: all 0.2s ease;
+            min-width: 200px;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 200px;
+        }
+
+        button.start {
+            background-color: var(--success);
+        }
+
+        button.start:hover {
+            background-color: #16a34a;
+            transform: translateY(-1px);
+        }
+
+        button.stop {
+            background-color: var(--danger);
+        }
+
+        button.stop:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: var(--border);
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: .3s;
+            border-radius: 28px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        select {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.95rem;
+            background-color: var(--background);
+            color: var(--text);
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .controls {
+                padding: 1rem;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+            }
+
+            .control-group label {
+                min-width: auto;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        #processingOverlay {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Automatic Video-Voice Assistant</h1>
+
+        <div class="video-container">
+            <video id="videoFeed" autoplay playsinline></video>
+            <div id="processingOverlay">Processing...</div>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="baseURL">API Endpoint:</label>
+                <input id="baseURL" type="text" value="http://localhost:8080">
+            </div>
+
+            <div class="control-group">
+                <label for="instructionText">Voice Command:</label>
+                <textarea id="instructionText" placeholder="Your voice command will appear here..."></textarea>
+            </div>
+
+            <div class="control-group">
+                <label for="responseText">Response:</label>
+                <textarea id="responseText" readonly placeholder="Server response will appear here..."></textarea>
+            </div>
+
+            <div class="control-group">
+                <label for="voiceAssistantToggle">Voice Assistant:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="voiceAssistantToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label for="debounceSelect">Silence Threshold:</label>
+                <select id="debounceSelect">
+                    <option value="500">0.5s</option>
+                    <option value="1000" selected>1s</option>
+                    <option value="1500">1.5s</option>
+                    <option value="2000">2s</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button id="startButton" class="start">Start Continuous Mode</button>
+                <button id="captureButton" class="start">Capture Single Frame</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('canvas');
+        const baseURL = document.getElementById('baseURL');
+        const instructionText = document.getElementById('instructionText');
+        const responseText = document.getElementById('responseText');
+        const startButton = document.getElementById('startButton');
+        const captureButton = document.getElementById('captureButton');
+        const voiceAssistantToggle = document.getElementById('voiceAssistantToggle');
+        const debounceSelect = document.getElementById('debounceSelect');
+        const processingOverlay = document.getElementById('processingOverlay');
+
+        let stream;
+        let intervalId;
+        let isProcessing = false;
+        let isContinuousMode = false;
+        let recognition;
+        let speechQueue = [];
+        let debounceTimer;
+
+        // Initialize speech recognition
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Speech recognition is not supported in this browser.');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                console.log('Speech recognition started');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+
+                instructionText.value = transcript;
+
+                // Clear existing timer
+                clearTimeout(debounceTimer);
+
+                // Set new timer
+                debounceTimer = setTimeout(() => {
+                    if (transcript.trim()) {
+                        processVoiceInstruction(transcript);
+                    }
+                }, parseInt(debounceSelect.value));
+            };
+
+            recognition.onend = () => {
+                if (voiceAssistantToggle.checked) {
+                    recognition.start();
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    recognition.start();
+                }
+            };
+        }
+
+        // Process voice instruction
+        async function processVoiceInstruction(instruction) {
+            if (isProcessing) return;
+
+            try {
+                isProcessing = true;
+                processingOverlay.style.display = 'flex';
+
+                const imageBase64URL = captureImage();
+                if (!imageBase64URL) {
+                    throw new Error('Failed to capture image');
+                }
+
+                const response = await sendChatCompletionRequest(instruction, imageBase64URL);
+                responseText.value = response;
+                speakResponse(response);
+            } catch (error) {
+                console.error('Error processing instruction:', error);
+                responseText.value = `Error: ${error.message}`;
+            } finally {
+                isProcessing = false;
+                processingOverlay.style.display = 'none';
+            }
+        }
+
+        // Speech synthesis
+        function speakResponse(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            speechQueue.push(utterance);
+
+            if (speechQueue.length === 1) {
+                speakNext();
+            }
+        }
+
+        function speakNext() {
+            if (speechQueue.length === 0) return;
+
+            const utterance = speechQueue[0];
+            utterance.onend = () => {
+                speechQueue.shift();
+                speakNext();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Capture image from video feed
+        function captureImage() {
+            if (!stream || !video.videoWidth) {
+                console.warn("Video stream not ready for capture.");
+                return null;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        // Send chat completion request
+        async function sendChatCompletionRequest(instruction, imageBase64URL) {
+            const response = await fetch(`${baseURL.value}/v1/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    max_tokens: 100,
+                    messages: [
+                        { role: 'user', content: [
+                            { type: 'text', text: instruction },
+                            { type: 'image_url', image_url: {
+                                url: imageBase64URL,
+                            } }
+                        ] },
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Server error: ${response.status} - ${errorData}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // Initialize camera
+        async function initCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+                responseText.value = "Camera access granted. Ready to start.";
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                responseText.value = `Error accessing camera: ${err.name} - ${err.message}. Please ensure permissions are granted and you are on HTTPS or localhost.`;
+                alert(`Error accessing camera: ${err.name}. Make sure you've granted permission and are on HTTPS or localhost.`);
+            }
+        }
+
+        // Start continuous mode
+        function startContinuousMode() {
+            if (!stream) {
+                responseText.value = "Camera not available. Cannot start.";
+                return;
+            }
+
+            isContinuousMode = true;
+            startButton.textContent = "Stop Continuous Mode";
+            startButton.classList.remove('start');
+            startButton.classList.add('stop');
+            captureButton.disabled = true;
+
+            intervalId = setInterval(async () => {
+                if (!isProcessing) {
+                    await processVoiceInstruction(instructionText.value || "What do you see?");
+                }
+            }, 2000);
+        }
+
+        // Stop continuous mode
+        function stopContinuousMode() {
+            isContinuousMode = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+            startButton.textContent = "Start Continuous Mode";
+            startButton.classList.remove('stop');
+            startButton.classList.add('start');
+            captureButton.disabled = false;
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', () => {
+            if (isContinuousMode) {
+                stopContinuousMode();
+            } else {
+                startContinuousMode();
+            }
+        });
+
+        captureButton.addEventListener('click', async () => {
+            if (!isProcessing) {
+                await processVoiceInstruction(instructionText.value || "What do you see?");
+            }
+        });
+
+        voiceAssistantToggle.addEventListener('change', () => {
+            if (voiceAssistantToggle.checked) {
+                initSpeechRecognition();
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+        });
+
+        // Initialize camera when the page loads
+        window.addEventListener('DOMContentLoaded', initCamera);
+
+        // Clean up when page is closed
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            if (recognition) {
+                recognition.stop();
+            }
+            window.speechSynthesis.cancel();
+        });
+    </script>
+</body>
+</html> 
